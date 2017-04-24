@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="peneder.ba1.ooe.fh.opencvimagemanipulationtests.ImageManipulationActivity">
+    <ImageView
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:src="@drawable/test_image"
+        android:id="@+id/image_manipulations_activity_image_view"
+        tools:layout_editor_absoluteX="0dp"
+        tools:layout_editor_absoluteY="0dp" />
+
+    <ToggleButton
+                android:id="@+id/toggleButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textOff="Sepia off"
+                android:textOn="Sepia on"
+        app:layout_constraintBottom_toBottomOf="@+id/image_manipulations_activity_image_view"
+        android:onClick="toggleSepia"
+        android:layout_marginRight="8dp"
+        android:layout_marginBottom="0dp"
+        app:layout_constraintRight_toRightOf="@+id/image_manipulations_activity_image_view" />
+
+    <Button
+        android:id="@+id/button5"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="96dp"
+        android:layout_marginTop="-16dp"
+        android:onClick="displayVignette"
+        android:text="vignette"
+        app:layout_constraintRight_toLeftOf="@+id/toggleButton"
+        app:layout_constraintTop_toTopOf="@+id/toggleButton" />
+
+    <Button
+        android:id="@+id/button6"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="8dp"
+        android:layout_marginTop="0dp"
+        android:onClick="rotateImage"
+        android:text="rotate"
+        app:layout_constraintRight_toLeftOf="@+id/toggleButton"
+        app:layout_constraintTop_toTopOf="@+id/toggleButton" />
+
+</android.support.constraint.ConstraintLayout>
