@@ -5,46 +5,87 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context="peneder.ba1.ooe.fh.opencvimagemanipulationtests.ImageManipulationActivity">
+
     <ImageView
+        android:id="@+id/image_manipulations_activity_image_view"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:src="@drawable/test_image"
-        android:id="@+id/image_manipulations_activity_image_view"
-        tools:layout_editor_absoluteX="0dp"
-        tools:layout_editor_absoluteY="0dp" />
+        android:layout_marginTop="0dp"
+        android:adjustViewBounds="true"
+        android:src="@drawable/aeolian_by_wlop"
+        app:layout_constraintTop_toBottomOf="@+id/horizontalScrollView"
+        tools:layout_editor_absoluteX="0dp" />
 
-    <ToggleButton
-                android:id="@+id/toggleButton"
+    <HorizontalScrollView
+        android:layout_width="wrap_content"
+        android:layout_height="50dp"
+        android:id="@+id/horizontalScrollView">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:orientation="horizontal">
+
+            <ToggleButton
+                android:id="@+id/sepia_mode_toggleButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginBottom="0dp"
+                android:layout_marginRight="8dp"
+                android:onClick="toggleSepia"
                 android:textOff="Sepia off"
-                android:textOn="Sepia on"
-        app:layout_constraintBottom_toBottomOf="@+id/image_manipulations_activity_image_view"
-        android:onClick="toggleSepia"
-        android:layout_marginRight="8dp"
-        android:layout_marginBottom="0dp"
-        app:layout_constraintRight_toRightOf="@+id/image_manipulations_activity_image_view" />
+                android:textOn="Sepia on" />
 
-    <Button
-        android:id="@+id/button5"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginRight="96dp"
-        android:layout_marginTop="-16dp"
-        android:onClick="displayVignette"
-        android:text="vignette"
-        app:layout_constraintRight_toLeftOf="@+id/toggleButton"
-        app:layout_constraintTop_toTopOf="@+id/toggleButton" />
+            <ToggleButton
+                android:id="@+id/grayscale_mode_toggleButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="0dp"
+                android:layout_marginRight="8dp"
+                android:onClick="toggleGrayScale"
+                android:textOff="Grayscale off"
+                android:textOn="Grayscale on" />
 
-    <Button
-        android:id="@+id/button6"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginRight="8dp"
-        android:layout_marginTop="0dp"
-        android:onClick="rotateImage"
-        android:text="rotate"
-        app:layout_constraintRight_toLeftOf="@+id/toggleButton"
-        app:layout_constraintTop_toTopOf="@+id/toggleButton" />
+            <ToggleButton
+                android:id="@+id/blur_mode_toggleButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="0dp"
+                android:layout_marginRight="8dp"
+                android:onClick="toggleBlur"
+                android:textOff="Blur off"
+                android:textOn="Blur on" />
+
+            <Button
+                android:id="@+id/button6"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="8dp"
+                android:layout_marginTop="0dp"
+                android:onClick="rotateImage"
+                android:text="rotate" />
+
+            <Button
+                android:id="@+id/skewImage"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="8dp"
+                android:layout_marginTop="0dp"
+                android:onClick="skewImage"
+                android:text="skew 45°" />
+            <ToggleButton
+                android:id="@+id/sobel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="0dp"
+                android:layout_marginRight="8dp"
+                android:onClick="sobel"
+                android:textOff="Sobel off"
+                android:textOn="Sobel on" />
+        </LinearLayout>
+
+    </HorizontalScrollView>
+
+
 
 </android.support.constraint.ConstraintLayout>

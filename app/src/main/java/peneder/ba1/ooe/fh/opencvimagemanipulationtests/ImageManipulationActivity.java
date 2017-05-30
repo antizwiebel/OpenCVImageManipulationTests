@@ -28,9 +28,19 @@ public class ImageManipulationActivity extends AppCompatActivity {
 
     private ImageView mImageView;
 
+    private ToggleButton mSepiaModeToggleButton;
+    private ToggleButton mGrayScaleToggleButton;
+    private ToggleButton mBlurToggleButton;
+
     Mat mImageMatUnFiltered = null;
     Mat mImageMatFiltered = null;
     Mat mVignette = null;
+
+    private boolean mSepiaModeOn = false;
+    private boolean mGrayScaleModeOn = false;
+    private boolean mBlurModeOn = false;
+    private boolean mSobelOn = false;
+
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
         public void onManagerConnected(int status) {
@@ -39,7 +49,6 @@ public class ImageManipulationActivity extends AppCompatActivity {
                 {
                     Log.i(TAG, "OpenCV loaded successfully");
                     initImageMat();
-                    //setSepiaMode();
                     //scaleImage(2);
                     //flipImage(270);
                     //flipImage(180);
@@ -56,8 +65,12 @@ public class ImageManipulationActivity extends AppCompatActivity {
         mImageMatFiltered = new Mat();
         mImageMatUnFiltered = new Mat();
         //Bitmap bitmap = ((BitmapDrawable)mImageView.getDrawable()).getBitmap();
-        Utils.bitmapToMat(BitmapFactory.decodeResource(getResources(),R.drawable.test_image), mImageMatFiltered);
+        Utils.bitmapToMat(BitmapFactory.decodeResource(getResources(),R.drawable.aeolian_by_wlop), mImageMatFiltered);
         mImageMatUnFiltered = mImageMatFiltered.clone();
+
+        mSepiaModeToggleButton = (ToggleButton) findViewById(R.id.sepia_mode_toggleButton);
+        mGrayScaleToggleButton= (ToggleButton) findViewById(R.id.grayscale_mode_toggleButton);
+        mBlurToggleButton= (ToggleButton) findViewById(R.id.blur_mode_toggleButton);
         //mVignette = new Mat();
         //Utils.bitmapToMat(BitmapFactory.decodeResource(getResources(),R.drawable.vignette), mVignette);
     }
@@ -83,7 +96,7 @@ public class ImageManipulationActivity extends AppCompatActivity {
         }
     }
 
-    private void setSepiaMode(boolean checked) {
+    private void setSepiaMode() {
         //Mat BGRMat = Imgcodecs.imread(ResourcesCompat.getDrawable(getResources(), R.drawable.test_image, null).toString());
         //Utils.loadResource(ImageManipulationActivity.this, R.drawable.test_image, CvType.Op);
         // convert to bitmap:
@@ -94,9 +107,14 @@ public class ImageManipulationActivity extends AppCompatActivity {
         mSepiaKernel.put(2, 0, /* B */0.131f, 0.534f, 0.272f, 0f);
         mSepiaKernel.put(3, 0, /* A */0.000f, 0.000f, 0.000f, 1f);
 
-        if (checked) {
+        if (mSepiaModeOn) {
             Core.transform(mImageMatFiltered, mImageMatFiltered, mSepiaKernel);
             updateImageView(mImageMatFiltered);
+            // uncheck other filter buttons
+            mBlurModeOn = false;
+            mGrayScaleModeOn= false;
+            mGrayScaleToggleButton.setChecked(false);
+            mBlurToggleButton.setChecked(false);
         } else {
             mImageMatFiltered = mImageMatUnFiltered.clone();
             updateImageView(mImageMatUnFiltered);
@@ -116,8 +134,55 @@ public class ImageManipulationActivity extends AppCompatActivity {
     }
 
     public void toggleSepia (View view) {
-        ToggleButton button = (ToggleButton) view;
-        setSepiaMode (button.isChecked());
+        mSepiaModeOn = !mSepiaModeOn;
+        setSepiaMode();
+    }
+
+    public void toggleBlur (View view) {
+        mBlurModeOn = !mBlurModeOn;
+        setBlurMode();
+    }
+
+    public void skewImage (View view) {
+        deskew(45);
+    }
+
+
+    public void toggleGrayScale (View view) {
+        mGrayScaleModeOn = !mGrayScaleModeOn;
+        setGrayScaleMode();
+    }
+
+    private void setBlurMode() {
+        if (mBlurModeOn) {
+            //Imgproc.GaussianBlur(mImageMatUnFiltered, mImageMatFiltered, new Size(37, 37), 0);
+            Imgproc.blur(mImageMatUnFiltered, mImageMatFiltered, new Size(31.0,31.0));
+            updateImageView(mImageMatFiltered);
+            // uncheck other filter buttons
+            mSepiaModeOn = false;
+            mGrayScaleModeOn= false;
+            mSepiaModeToggleButton.setChecked(false);
+            mGrayScaleToggleButton.setChecked(false);
+        } else {
+            mImageMatFiltered = mImageMatUnFiltered.clone();
+            updateImageView(mImageMatUnFiltered);
+        }
+    }
+
+    private void setGrayScaleMode() {
+        if (mGrayScaleModeOn) {
+            Imgproc.cvtColor(mImageMatUnFiltered, mImageMatFiltered, Imgproc.COLOR_BGR2GRAY);
+            Imgproc.cvtColor(mImageMatFiltered, mImageMatFiltered, Imgproc.COLOR_GRAY2RGBA, 4);
+            updateImageView(mImageMatFiltered);
+            // uncheck other filter buttons
+            mSepiaModeToggleButton.setChecked(false);
+            mBlurToggleButton.setChecked(false);
+            mSepiaModeOn = false;
+            mBlurModeOn= false;
+        } else {
+            mImageMatFiltered = mImageMatUnFiltered.clone();
+            updateImageView(mImageMatUnFiltered);
+        }
     }
 
     private void flipImage (int rotationAngle) {
@@ -135,6 +200,26 @@ public class ImageManipulationActivity extends AppCompatActivity {
             Core.flip(mImageMatUnFiltered.t(), mImageMatUnFiltered, 1);
         }
         updateImageView(mImageMatFiltered);
+    }
+
+    public void erodeImage (View view) {
+        Mat element = Imgproc.getStructuringElement(Imgproc.CV_SHAPE_CROSS, new Size(2*5+1, 2*5+1), new Point(5, 5));
+
+        Imgproc.erode(mImageMatUnFiltered, mImageMatFiltered, element);
+
+        updateImageView(mImageMatFiltered);
+    }
+
+    public void sobel (View view) {
+        mSobelOn = !mSobelOn;
+        if (mSobelOn) {
+            Imgproc.Sobel(mImageMatFiltered, mImageMatFiltered, CvType.CV_8U, 1,1);
+            updateImageView(mImageMatFiltered);
+        } else {
+            mImageMatFiltered = mImageMatUnFiltered.clone();
+            updateImageView(mImageMatUnFiltered);
+        }
+
     }
 
     private void scaleImage (double zoomfactor) {
