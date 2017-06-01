@@ -1,9 +1,11 @@
 package peneder.ba1.ooe.fh.opencvimagemanipulationtests;
 
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.design.widget.FloatingActionButton;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
@@ -19,8 +21,6 @@ import org.opencv.core.Mat;
 import org.opencv.core.Point;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
-
-import static org.opencv.imgcodecs.Imgcodecs.imread;
 
 public class ImageManipulationActivity extends AppCompatActivity {
 
@@ -40,7 +40,11 @@ public class ImageManipulationActivity extends AppCompatActivity {
     private boolean mGrayScaleModeOn = false;
     private boolean mBlurModeOn = false;
     private boolean mSobelOn = false;
+    private boolean mCannyOn = false;
 
+    private FloatingActionButton takePictureButton;
+
+    static final int REQUEST_IMAGE_CAPTURE = 1;
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
         public void onManagerConnected(int status) {
@@ -48,7 +52,7 @@ public class ImageManipulationActivity extends AppCompatActivity {
                 case LoaderCallbackInterface.SUCCESS:
                 {
                     Log.i(TAG, "OpenCV loaded successfully");
-                    initImageMat();
+                    //initImageMat();
                     //scaleImage(2);
                     //flipImage(270);
                     //flipImage(180);
@@ -61,18 +65,24 @@ public class ImageManipulationActivity extends AppCompatActivity {
         }
     };
 
-    private void initImageMat() {
+    private void initImageMat(Bitmap imageBitMap) {
         mImageMatFiltered = new Mat();
         mImageMatUnFiltered = new Mat();
-        //Bitmap bitmap = ((BitmapDrawable)mImageView.getDrawable()).getBitmap();
-        Utils.bitmapToMat(BitmapFactory.decodeResource(getResources(),R.drawable.aeolian_by_wlop), mImageMatFiltered);
+
+        if (imageBitMap != null) {
+            Utils.bitmapToMat(imageBitMap, mImageMatFiltered);
+        } else {
+            Utils.bitmapToMat(BitmapFactory.decodeResource(getResources(),R.drawable.aeolian_by_wlop), mImageMatFiltered);
+        }
         mImageMatUnFiltered = mImageMatFiltered.clone();
 
         mSepiaModeToggleButton = (ToggleButton) findViewById(R.id.sepia_mode_toggleButton);
         mGrayScaleToggleButton= (ToggleButton) findViewById(R.id.grayscale_mode_toggleButton);
         mBlurToggleButton= (ToggleButton) findViewById(R.id.blur_mode_toggleButton);
-        //mVignette = new Mat();
-        //Utils.bitmapToMat(BitmapFactory.decodeResource(getResources(),R.drawable.vignette), mVignette);
+        mVignette = new Mat();
+        Utils.bitmapToMat(BitmapFactory.decodeResource(getResources(),R.drawable.vignette), mVignette);
+
+        changeResolution();
     }
 
     @Override
@@ -81,8 +91,9 @@ public class ImageManipulationActivity extends AppCompatActivity {
         setContentView(R.layout.activity_image_manipulation);
 
         mImageView = (ImageView) findViewById(R.id.image_manipulations_activity_image_view);
-    }
 
+        takePictureButton = (FloatingActionButton) findViewById(R.id.cameraButton);
+      }
 
     @Override
     protected void onResume() {
@@ -95,6 +106,23 @@ public class ImageManipulationActivity extends AppCompatActivity {
             mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
         }
     }
+
+    public void takeImageFromCamera(View view) {
+        Intent cameraIntent = new Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
+        startActivityForResult(cameraIntent, REQUEST_IMAGE_CAPTURE);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
+            Bundle extras = data.getExtras();
+            Bitmap imageBitmap = (Bitmap) extras.get("data");
+            initImageMat(imageBitmap);
+            changeResolution();
+        }
+    }
+
+
 
     private void setSepiaMode() {
         //Mat BGRMat = Imgcodecs.imread(ResourcesCompat.getDrawable(getResources(), R.drawable.test_image, null).toString());
@@ -213,13 +241,22 @@ public class ImageManipulationActivity extends AppCompatActivity {
     public void sobel (View view) {
         mSobelOn = !mSobelOn;
         if (mSobelOn) {
-            Imgproc.Sobel(mImageMatFiltered, mImageMatFiltered, CvType.CV_8U, 1,1);
+            Imgproc.Sobel(mImageMatFiltered, mImageMatFiltered, CvType.CV_8U, 1,1,5,1,0);
             updateImageView(mImageMatFiltered);
         } else {
             mImageMatFiltered = mImageMatUnFiltered.clone();
             updateImageView(mImageMatUnFiltered);
         }
 
+    }
+
+    public void cannyEdgeDetection (View view) {
+        mCannyOn = !mCannyOn;
+        if (mCannyOn) {
+            Imgproc.cvtColor(mImageMatUnFiltered, mImageMatFiltered, Imgproc.COLOR_RGB2GRAY, 4);
+            Imgproc.Canny(mImageMatFiltered, mImageMatFiltered, 80, 100);
+            updateImageView(mImageMatFiltered);
+        }
     }
 
     private void scaleImage (double zoomfactor) {
@@ -231,6 +268,15 @@ public class ImageManipulationActivity extends AppCompatActivity {
         Imgproc.resize(zoomCorner, mImageMatFiltered, zoomCorner.size());
         //Imgproc.rectangle(mZoomWindow, new Point(1, 1), new Point(wsize.width - 2, wsize.height - 2), new Scalar(255, 0, 0, 255), 2);
         zoomCorner.release();
+        mImageMatUnFiltered = mImageMatFiltered.clone();
+        updateImageView(mImageMatFiltered);
+    }
+
+    private void changeResolution () {
+        Size size = new Size (1000,1000);//the dst image size,e.g.100x100
+
+        Imgproc.resize(mImageMatFiltered,mImageMatFiltered,size);//resize image
+        Imgproc.resize(mVignette,mVignette,size);//resize image
         mImageMatUnFiltered = mImageMatFiltered.clone();
         updateImageView(mImageMatFiltered);
     }
