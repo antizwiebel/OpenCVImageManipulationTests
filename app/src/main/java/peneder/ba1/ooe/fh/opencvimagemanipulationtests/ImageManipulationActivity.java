@@ -68,7 +68,6 @@ public class ImageManipulationActivity extends AppCompatActivity {
     private void initImageMat(Bitmap imageBitMap) {
         mImageMatFiltered = new Mat();
         mImageMatUnFiltered = new Mat();
-
         if (imageBitMap != null) {
             Utils.bitmapToMat(imageBitMap, mImageMatFiltered);
         } else {
@@ -241,13 +240,45 @@ public class ImageManipulationActivity extends AppCompatActivity {
     public void sobel (View view) {
         mSobelOn = !mSobelOn;
         if (mSobelOn) {
-            Imgproc.Sobel(mImageMatFiltered, mImageMatFiltered, CvType.CV_8U, 1,1,5,1,0);
+            // init
+            Mat grayImage = new Mat();
+            Mat detectedEdges = new Mat();
+            int scale = 1;
+            int delta = 0;
+            int ddepth = CvType.CV_16S;
+            Mat grad_x = new Mat();
+            Mat grad_y = new Mat();
+            Mat abs_grad_x = new Mat();
+            Mat abs_grad_y = new Mat();
+
+            // reduce noise with a 3x3 kernel
+            Imgproc.GaussianBlur(mImageMatUnFiltered, mImageMatFiltered, new Size(3, 3), 0, 0, Core.BORDER_DEFAULT);
+
+            // convert to grayscale
+            Imgproc.cvtColor(mImageMatFiltered, grayImage, Imgproc.COLOR_BGR2GRAY);
+
+            // Gradient X
+            // Imgproc.Sobel(grayImage, grad_x, ddepth, 1, 0, 3, scale,
+            // this.threshold.getValue(), Core.BORDER_DEFAULT );
+            Imgproc.Sobel(grayImage, grad_x, ddepth, 1, 0);
+            Core.convertScaleAbs(grad_x, abs_grad_x);
+
+            // Gradient Y
+            // Imgproc.Sobel(grayImage, grad_y, ddepth, 0, 1, 3, scale,
+            // this.threshold.getValue(), Core.BORDER_DEFAULT );
+            Imgproc.Sobel(grayImage, grad_y, ddepth, 0, 1);
+            Core.convertScaleAbs(grad_y, abs_grad_y);
+
+            // Total Gradient (approximate)
+            Core.addWeighted(abs_grad_x, 0.5, abs_grad_y, 0.5, 0, detectedEdges);
+            // Core.addWeighted(grad_x, 0.5, grad_y, 0.5, 0, detectedEdges);
+
+
             updateImageView(mImageMatFiltered);
         } else {
-            mImageMatFiltered = mImageMatUnFiltered.clone();
+            mImageMatUnFiltered.copyTo(mImageMatFiltered);
             updateImageView(mImageMatUnFiltered);
         }
-
     }
 
     public void cannyEdgeDetection (View view) {
@@ -261,14 +292,14 @@ public class ImageManipulationActivity extends AppCompatActivity {
 
     private void scaleImage (double zoomfactor) {
         Size sizeRgba = mImageMatFiltered.size();
-
         int rows = (int) sizeRgba.height;
         int cols = (int) sizeRgba.width;
+
         Mat zoomCorner = mImageMatFiltered.submat(rows / 4, (rows *3) / 4 , cols/4, (cols * 3) / 4);
         Imgproc.resize(zoomCorner, mImageMatFiltered, zoomCorner.size());
         //Imgproc.rectangle(mZoomWindow, new Point(1, 1), new Point(wsize.width - 2, wsize.height - 2), new Scalar(255, 0, 0, 255), 2);
         zoomCorner.release();
-        mImageMatUnFiltered = mImageMatFiltered.clone();
+        mImageMatFiltered.copyTo(mImageMatUnFiltered);
         updateImageView(mImageMatFiltered);
     }
 
