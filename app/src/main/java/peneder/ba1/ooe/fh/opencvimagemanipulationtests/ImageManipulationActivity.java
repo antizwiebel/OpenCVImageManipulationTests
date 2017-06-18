@@ -3,12 +3,18 @@ package peneder.ba1.ooe.fh.opencvimagemanipulationtests;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
+import android.os.Environment;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
+import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.Toast;
 import android.widget.ToggleButton;
 
 import org.opencv.android.BaseLoaderCallback;
@@ -18,9 +24,21 @@ import org.opencv.android.Utils;
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
+import org.opencv.core.MatOfFloat;
+import org.opencv.core.MatOfInt;
 import org.opencv.core.Point;
+import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
 public class ImageManipulationActivity extends AppCompatActivity {
 
@@ -31,6 +49,7 @@ public class ImageManipulationActivity extends AppCompatActivity {
     private ToggleButton mSepiaModeToggleButton;
     private ToggleButton mGrayScaleToggleButton;
     private ToggleButton mBlurToggleButton;
+    private MenuItem mSaveImage;
 
     Mat mImageMatUnFiltered = null;
     Mat mImageMatFiltered = null;
@@ -41,48 +60,12 @@ public class ImageManipulationActivity extends AppCompatActivity {
     private boolean mBlurModeOn = false;
     private boolean mSobelOn = false;
     private boolean mCannyOn = false;
+    private boolean mRemoveBackground = false;
 
     private FloatingActionButton takePictureButton;
 
     static final int REQUEST_IMAGE_CAPTURE = 1;
-    private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
-        @Override
-        public void onManagerConnected(int status) {
-            switch (status) {
-                case LoaderCallbackInterface.SUCCESS:
-                {
-                    Log.i(TAG, "OpenCV loaded successfully");
-                    //initImageMat();
-                    //scaleImage(2);
-                    //flipImage(270);
-                    //flipImage(180);
-                } break;
-                default:
-                {
-                    super.onManagerConnected(status);
-                } break;
-            }
-        }
-    };
-
-    private void initImageMat(Bitmap imageBitMap) {
-        mImageMatFiltered = new Mat();
-        mImageMatUnFiltered = new Mat();
-        if (imageBitMap != null) {
-            Utils.bitmapToMat(imageBitMap, mImageMatFiltered);
-        } else {
-            Utils.bitmapToMat(BitmapFactory.decodeResource(getResources(),R.drawable.aeolian_by_wlop), mImageMatFiltered);
-        }
-        mImageMatUnFiltered = mImageMatFiltered.clone();
-
-        mSepiaModeToggleButton = (ToggleButton) findViewById(R.id.sepia_mode_toggleButton);
-        mGrayScaleToggleButton= (ToggleButton) findViewById(R.id.grayscale_mode_toggleButton);
-        mBlurToggleButton= (ToggleButton) findViewById(R.id.blur_mode_toggleButton);
-        mVignette = new Mat();
-        Utils.bitmapToMat(BitmapFactory.decodeResource(getResources(),R.drawable.vignette), mVignette);
-
-        changeResolution();
-    }
+    private boolean pictureTaken = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -92,7 +75,8 @@ public class ImageManipulationActivity extends AppCompatActivity {
         mImageView = (ImageView) findViewById(R.id.image_manipulations_activity_image_view);
 
         takePictureButton = (FloatingActionButton) findViewById(R.id.cameraButton);
-      }
+
+    }
 
     @Override
     protected void onResume() {
@@ -106,6 +90,64 @@ public class ImageManipulationActivity extends AppCompatActivity {
         }
     }
 
+    private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
+        @Override
+        public void onManagerConnected(int status) {
+            switch (status) {
+                case LoaderCallbackInterface.SUCCESS:
+                {
+                    Log.i(TAG, "OpenCV loaded successfully");
+                    //init image mats
+                    if (!pictureTaken)
+                        initImageMat(null);
+                } break;
+                default:
+                {
+                    super.onManagerConnected(status);
+                } break;
+            }
+        }
+    };
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        Log.i(TAG, "called onCreateOptionsMenu");
+        mSaveImage  = menu.add("Save image");
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        Log.i(TAG, "called onOptionsItemSelected; selected item: " + item);
+        if (item == mSaveImage) {
+            saveImage();
+        }
+        return true;
+    }
+
+    private void initImageMat(Bitmap imageBitMap) {
+        mImageMatFiltered = new Mat();
+        mImageMatUnFiltered = new Mat();
+
+        Bitmap standardImageBitmap = BitmapFactory.decodeResource(getResources(),R.drawable.lenna);
+
+        if (imageBitMap != null) {
+            Utils.bitmapToMat(imageBitMap, mImageMatFiltered);
+        } else {
+            Utils.bitmapToMat(standardImageBitmap, mImageMatFiltered);
+        }
+        mImageMatUnFiltered = mImageMatFiltered.clone();
+
+        mSepiaModeToggleButton = (ToggleButton) findViewById(R.id.sepia_mode_toggleButton);
+        mGrayScaleToggleButton= (ToggleButton) findViewById(R.id.grayscale_mode_toggleButton);
+        mBlurToggleButton= (ToggleButton) findViewById(R.id.blur_mode_toggleButton);
+        mVignette = new Mat();
+        Utils.bitmapToMat(BitmapFactory.decodeResource(getResources(),R.drawable.vignette), mVignette);
+
+        changeResolution();
+    }
+
+
     public void takeImageFromCamera(View view) {
         Intent cameraIntent = new Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
         startActivityForResult(cameraIntent, REQUEST_IMAGE_CAPTURE);
@@ -114,6 +156,7 @@ public class ImageManipulationActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
+            pictureTaken = true;
             Bundle extras = data.getExtras();
             Bitmap imageBitmap = (Bitmap) extras.get("data");
             initImageMat(imageBitmap);
@@ -273,7 +316,7 @@ public class ImageManipulationActivity extends AppCompatActivity {
             Core.addWeighted(abs_grad_x, 0.5, abs_grad_y, 0.5, 0, detectedEdges);
             // Core.addWeighted(grad_x, 0.5, grad_y, 0.5, 0, detectedEdges);
 
-
+            detectedEdges.copyTo(mImageMatFiltered);
             updateImageView(mImageMatFiltered);
         } else {
             mImageMatUnFiltered.copyTo(mImageMatFiltered);
@@ -284,8 +327,14 @@ public class ImageManipulationActivity extends AppCompatActivity {
     public void cannyEdgeDetection (View view) {
         mCannyOn = !mCannyOn;
         if (mCannyOn) {
-            Imgproc.cvtColor(mImageMatUnFiltered, mImageMatFiltered, Imgproc.COLOR_RGB2GRAY, 4);
-            Imgproc.Canny(mImageMatFiltered, mImageMatFiltered, 80, 100);
+            // convert to grayscale
+            Imgproc.cvtColor(mImageMatUnFiltered, mImageMatFiltered, Imgproc.COLOR_BGR2GRAY);
+
+            // reduce noise with a 3x3 kernel
+            Imgproc.blur(mImageMatFiltered, mImageMatFiltered, new Size(3, 3));
+
+            // canny detector, upper threshold of 80 and a lower one of 90
+            Imgproc.Canny(mImageMatFiltered, mImageMatFiltered, 80, 90);
             updateImageView(mImageMatFiltered);
         }
     }
@@ -304,7 +353,14 @@ public class ImageManipulationActivity extends AppCompatActivity {
     }
 
     private void changeResolution () {
-        Size size = new Size (1000,1000);//the dst image size,e.g.100x100
+        //get device screen width and height
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+        int height = displayMetrics.heightPixels;
+        int width = displayMetrics.widthPixels;
+
+
+        Size size = new Size (width,height-580);//the dst image size,e.g.100x100
 
         Imgproc.resize(mImageMatFiltered,mImageMatFiltered,size);//resize image
         Imgproc.resize(mVignette,mVignette,size);//resize image
@@ -326,6 +382,142 @@ public class ImageManipulationActivity extends AppCompatActivity {
 
         updateImageView(mImageMatFiltered);
 
+    }
+
+    private void saveImage() {
+        File pictureFile = getOutputMediaFile();
+        if (pictureFile == null) {
+            Log.d(TAG,
+                    "Error creating media file, check storage permissions: ");// e.getMessage());
+            return;
+        }
+        try {
+            FileOutputStream fos = new FileOutputStream(pictureFile);
+            Bitmap image = ((BitmapDrawable)mImageView.getDrawable()).getBitmap();
+            image.compress(Bitmap.CompressFormat.PNG, 90, fos);
+            fos.close();
+            Toast.makeText(getApplicationContext(), "Image saved successfully !", Toast.LENGTH_SHORT).show();
+        } catch (FileNotFoundException e) {
+            Log.d(TAG, "File not found: " + e.getMessage());
+        } catch (IOException e) {
+            Log.d(TAG, "Error accessing file: " + e.getMessage());
+        }
+    }
+
+    /** Create a File for saving an image or video */
+    private  File getOutputMediaFile(){
+        // To be safe, you should check that the SDCard is mounted
+        // using Environment.getExternalStorageState() before doing this.
+        File mediaStorageDir = new File(Environment.getExternalStorageDirectory()
+                + "/Pictures/OpenCVImageManipulationTest");
+
+        // This location works best if you want the created images to be shared
+        // between applications and persist after your app has been uninstalled.
+
+        // Create the storage directory if it does not exist
+        if (! mediaStorageDir.exists()){
+            if (! mediaStorageDir.mkdirs()){
+                return null;
+            }
+        }
+        // Create a media file name
+        String timeStamp = new SimpleDateFormat("ddMMyyyy_HHmm").format(new Date());
+        File mediaFile;
+        String mImageName="MI_"+ timeStamp +".jpg";
+        mediaFile = new File(mediaStorageDir.getPath() + File.separator + mImageName);
+        return mediaFile;
+    }
+
+    public void removeBackground (View view) {
+        mRemoveBackground = !mRemoveBackground;
+        if (mRemoveBackground) {
+            mImageMatFiltered = doBackgroundRemoval(mImageMatUnFiltered);
+            updateImageView(mImageMatFiltered);
+        } else {
+            mImageMatUnFiltered.copyTo(mImageMatFiltered);
+            updateImageView(mImageMatUnFiltered);
+        }
+    }
+
+    /**
+     * Perform the operations needed for removing a uniform background
+     *
+     * @param frame
+     *            the current frame
+     * @return an image with only foreground objects
+     */
+    private Mat doBackgroundRemoval(Mat frame)
+    {
+        // init
+        Mat hsvImg = new Mat();
+        List<Mat> hsvPlanes = new ArrayList<>();
+        Mat thresholdImg = new Mat();
+
+        int thresh_type = Imgproc.THRESH_BINARY_INV;
+
+
+        // threshold the image with the average hue value
+        hsvImg.create(frame.size(), CvType.CV_8U);
+        Imgproc.cvtColor(frame, hsvImg, Imgproc.COLOR_BGR2HSV);
+        Core.split(hsvImg, hsvPlanes);
+
+        // get the average hue value of the image
+        double threshValue = this.getHistAverage(hsvImg, hsvPlanes.get(0));
+
+        Imgproc.threshold(hsvPlanes.get(0), thresholdImg, threshValue, 179.0, thresh_type);
+
+        Imgproc.blur(thresholdImg, thresholdImg, new Size(5, 5));
+
+        // dilate to fill gaps, erode to smooth edges
+        Imgproc.dilate(thresholdImg, thresholdImg, new Mat(), new Point(-1, -1), 1);
+        Imgproc.erode(thresholdImg, thresholdImg, new Mat(), new Point(-1, -1), 3);
+
+        Imgproc.threshold(thresholdImg, thresholdImg, threshValue, 179.0, Imgproc.THRESH_BINARY);
+
+        // create the new image
+        Mat foreground = new Mat(frame.size(), CvType.CV_8UC3, new Scalar(255, 255, 255));
+        frame.copyTo(foreground, thresholdImg);
+
+        return foreground;
+    }
+
+    /**
+     * Get the average hue value of the image starting from its Hue channel
+     * histogram
+     *
+     * @param hsvImg
+     *            the current frame in HSV
+     * @param hueValues
+     *            the Hue component of the current frame
+     * @return the average Hue value
+     */
+    private double getHistAverage(Mat hsvImg, Mat hueValues)
+    {
+        // init
+        double average = 0.0;
+        Mat hist_hue = new Mat();
+        // 0-180: range of Hue values
+        MatOfInt histSize = new MatOfInt(180);
+        List<Mat> hue = new ArrayList<>();
+        hue.add(hueValues);
+
+        // compute the histogram
+        Imgproc.calcHist(hue, new MatOfInt(0), new Mat(), hist_hue, histSize, new MatOfFloat(0, 179));
+
+        // get the average Hue value of the image
+        // (sum(bin(h)*h))/(image-height*image-width)
+        // -----------------
+        // equivalent to get the hue of each pixel in the image, add them, and
+        // divide for the image size (height and width)
+        for (int h = 0; h < 180; h++)
+        {
+            // for each bin, get its value and multiply it for the corresponding
+            // hue
+            average += (hist_hue.get(h, 0)[0] * h);
+        }
+
+        // return the average hue of the image
+        return average = average / hsvImg.size().height / hsvImg.size().width;
     }
 
     private void updateImageView(Mat imageMat) {

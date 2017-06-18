@@ -12,7 +12,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:adjustViewBounds="true"
-        android:src="@drawable/aeolian_by_wlop"
+        android:src="@drawable/lenna"
         app:layout_constraintTop_toBottomOf="@+id/horizontalScrollView"
         tools:layout_editor_absoluteX="0dp" />
 
@@ -71,8 +71,8 @@
                 android:layout_height="wrap_content"
                 android:layout_marginRight="8dp"
                 android:layout_marginTop="0dp"
-                android:onClick="rotateImage"
-                android:text="" />
+                android:onClick="displayVignette"
+                android:text="vignette" />
 
             <Button
                 android:id="@+id/skewImage"
@@ -102,6 +102,16 @@
                 android:onClick="cannyEdgeDetection"
                 android:textOff="Canny off"
                 android:textOn="Canny on" />
+
+            <ToggleButton
+                android:id="@+id/backgroundRemoval"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="0dp"
+                android:layout_marginRight="8dp"
+                android:onClick="removeBackground"
+                android:textOff="Background removal"
+                android:textOn="Background removal" />
         </LinearLayout>
 
     </HorizontalScrollView>
@@ -111,7 +121,7 @@
         android:layout_width="50dp"
         android:layout_height="50dp"
         android:layout_marginRight="16dp"
-        android:layout_marginTop="32dp"
+        android:layout_marginTop="16dp"
         android:clickable="true"
         android:onClick="takeImageFromCamera"
         app:fabSize="mini"
