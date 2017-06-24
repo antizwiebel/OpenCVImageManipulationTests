@@ -1,5 +1,6 @@
 package peneder.ba1.ooe.fh.opencvimagemanipulationtests;
 
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -14,6 +15,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.SeekBar;
 import android.widget.Toast;
 import android.widget.ToggleButton;
 
@@ -49,6 +51,12 @@ public class ImageManipulationActivity extends AppCompatActivity {
     private ToggleButton mSepiaModeToggleButton;
     private ToggleButton mGrayScaleToggleButton;
     private ToggleButton mBlurToggleButton;
+    private ToggleButton mSobelToggleButton;
+    private ToggleButton mRemoveBackgroundToggleButton;
+    private ToggleButton mErodeToggleButton;
+    private ToggleButton mCannyToggleButton;
+    private ToggleButton mScaleImageToggleButton;
+    private ToggleButton mDilateToggleButton;
     private MenuItem mSaveImage;
 
     Mat mImageMatUnFiltered = null;
@@ -60,7 +68,10 @@ public class ImageManipulationActivity extends AppCompatActivity {
     private boolean mBlurModeOn = false;
     private boolean mSobelOn = false;
     private boolean mCannyOn = false;
-    private boolean mRemoveBackground = false;
+    private boolean mRemoveBackgroundOn = false;
+    private boolean mErodeOn = false;
+    private boolean mScalingOn = false;
+    private boolean mDilateOn = false;
 
     private FloatingActionButton takePictureButton;
 
@@ -76,6 +87,14 @@ public class ImageManipulationActivity extends AppCompatActivity {
 
         takePictureButton = (FloatingActionButton) findViewById(R.id.cameraButton);
 
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        mImageMatFiltered.release();
+        mImageMatUnFiltered.release();
+        mVignette.release();
     }
 
     @Override
@@ -129,21 +148,33 @@ public class ImageManipulationActivity extends AppCompatActivity {
         mImageMatFiltered = new Mat();
         mImageMatUnFiltered = new Mat();
 
-        Bitmap standardImageBitmap = BitmapFactory.decodeResource(getResources(),R.drawable.lenna);
+
 
         if (imageBitMap != null) {
+            //get matrix representation of the captured image
             Utils.bitmapToMat(imageBitMap, mImageMatFiltered);
         } else {
+            //load default image if no picture has been taken yet
+            Bitmap standardImageBitmap = BitmapFactory.decodeResource(getResources(),R.drawable.lenna);
             Utils.bitmapToMat(standardImageBitmap, mImageMatFiltered);
         }
         mImageMatUnFiltered = mImageMatFiltered.clone();
 
+        //initialize toggleButtons
         mSepiaModeToggleButton = (ToggleButton) findViewById(R.id.sepia_mode_toggleButton);
         mGrayScaleToggleButton= (ToggleButton) findViewById(R.id.grayscale_mode_toggleButton);
         mBlurToggleButton= (ToggleButton) findViewById(R.id.blur_mode_toggleButton);
+        mSobelToggleButton = (ToggleButton) findViewById(R.id.sobel);
+        mErodeToggleButton = (ToggleButton) findViewById(R.id.erode);
+        mCannyToggleButton = (ToggleButton) findViewById(R.id.cannyEdgeDetection);
+        mScaleImageToggleButton = (ToggleButton) findViewById(R.id.scaleImage);
+        mRemoveBackgroundToggleButton = (ToggleButton) findViewById(R.id.backgroundRemoval);
+        mDilateToggleButton = (ToggleButton) findViewById(R.id.dilate);
+
+        //get "vignette" image from ressource
         mVignette = new Mat();
         Utils.bitmapToMat(BitmapFactory.decodeResource(getResources(),R.drawable.vignette), mVignette);
-
+        //set pictures to a standard resolution
         changeResolution();
     }
 
@@ -167,24 +198,31 @@ public class ImageManipulationActivity extends AppCompatActivity {
 
 
     private void setSepiaMode() {
-        //Mat BGRMat = Imgcodecs.imread(ResourcesCompat.getDrawable(getResources(), R.drawable.test_image, null).toString());
-        //Utils.loadResource(ImageManipulationActivity.this, R.drawable.test_image, CvType.Op);
-        // convert to bitmap:
-        Mat mSepiaKernel;
-        mSepiaKernel = new Mat(4, 4, CvType.CV_32F);
-        mSepiaKernel.put(0, 0, /* R */0.189f, 0.769f, 0.393f, 0f);
-        mSepiaKernel.put(1, 0, /* G */0.168f, 0.686f, 0.349f, 0f);
-        mSepiaKernel.put(2, 0, /* B */0.131f, 0.534f, 0.272f, 0f);
-        mSepiaKernel.put(3, 0, /* A */0.000f, 0.000f, 0.000f, 1f);
+        Mat sepiaKernel;
+        sepiaKernel = new Mat(4, 4, CvType.CV_32F);
+        sepiaKernel.put(0, 0, /* R */0.189f, 0.769f, 0.393f, 0f);
+        sepiaKernel.put(1, 0, /* G */0.168f, 0.686f, 0.349f, 0f);
+        sepiaKernel.put(2, 0, /* B */0.131f, 0.534f, 0.272f, 0f);
+        sepiaKernel.put(3, 0, /* A */0.000f, 0.000f, 0.000f, 1f);
 
         if (mSepiaModeOn) {
-            Core.transform(mImageMatFiltered, mImageMatFiltered, mSepiaKernel);
+            Core.transform(mImageMatFiltered, mImageMatFiltered, sepiaKernel);
             updateImageView(mImageMatFiltered);
             // uncheck other filter buttons
             mBlurModeOn = false;
-            mGrayScaleModeOn= false;
+            mGrayScaleModeOn = false;
+            mSobelOn = false;
+            mCannyOn = false;
+            mRemoveBackgroundOn = false;
+            mErodeOn = false;
+            mScalingOn = false;
+            mScaleImageToggleButton.setChecked(false);
             mGrayScaleToggleButton.setChecked(false);
             mBlurToggleButton.setChecked(false);
+            mCannyToggleButton.setChecked(false);
+            mSobelToggleButton.setChecked(false);
+            mRemoveBackgroundToggleButton.setChecked(false);
+            mErodeToggleButton.setChecked(false);
         } else {
             mImageMatFiltered = mImageMatUnFiltered.clone();
             updateImageView(mImageMatUnFiltered);
@@ -229,10 +267,20 @@ public class ImageManipulationActivity extends AppCompatActivity {
             Imgproc.blur(mImageMatUnFiltered, mImageMatFiltered, new Size(31.0,31.0));
             updateImageView(mImageMatFiltered);
             // uncheck other filter buttons
+            mGrayScaleModeOn = false;
+            mSobelOn = false;
             mSepiaModeOn = false;
-            mGrayScaleModeOn= false;
-            mSepiaModeToggleButton.setChecked(false);
+            mCannyOn = false;
+            mRemoveBackgroundOn = false;
+            mErodeOn = false;
+            mScalingOn = false;
+            mScaleImageToggleButton.setChecked(false);
             mGrayScaleToggleButton.setChecked(false);
+            mCannyToggleButton.setChecked(false);
+            mSobelToggleButton.setChecked(false);
+            mSepiaModeToggleButton.setChecked(false);
+            mRemoveBackgroundToggleButton.setChecked(false);
+            mErodeToggleButton.setChecked(false);
         } else {
             mImageMatFiltered = mImageMatUnFiltered.clone();
             updateImageView(mImageMatUnFiltered);
@@ -245,10 +293,20 @@ public class ImageManipulationActivity extends AppCompatActivity {
             Imgproc.cvtColor(mImageMatFiltered, mImageMatFiltered, Imgproc.COLOR_GRAY2RGBA, 4);
             updateImageView(mImageMatFiltered);
             // uncheck other filter buttons
-            mSepiaModeToggleButton.setChecked(false);
-            mBlurToggleButton.setChecked(false);
+            mBlurModeOn = false;
+            mSobelOn = false;
             mSepiaModeOn = false;
-            mBlurModeOn= false;
+            mCannyOn = false;
+            mRemoveBackgroundOn = false;
+            mErodeOn = false;
+            mScalingOn = false;
+            mScaleImageToggleButton.setChecked(false);
+            mBlurToggleButton.setChecked(false);
+            mCannyToggleButton.setChecked(false);
+            mSobelToggleButton.setChecked(false);
+            mSepiaModeToggleButton.setChecked(false);
+            mRemoveBackgroundToggleButton.setChecked(false);
+            mErodeToggleButton.setChecked(false);
         } else {
             mImageMatFiltered = mImageMatUnFiltered.clone();
             updateImageView(mImageMatUnFiltered);
@@ -272,12 +330,107 @@ public class ImageManipulationActivity extends AppCompatActivity {
         updateImageView(mImageMatFiltered);
     }
 
-    public void erodeImage (View view) {
-        Mat element = Imgproc.getStructuringElement(Imgproc.CV_SHAPE_CROSS, new Size(2*5+1, 2*5+1), new Point(5, 5));
-
-        Imgproc.erode(mImageMatUnFiltered, mImageMatFiltered, element);
-
+    public void changeBrightness (int brightness) {
+        mImageMatUnFiltered.convertTo(mImageMatFiltered,-1,1,brightness);
         updateImageView(mImageMatFiltered);
+    }
+
+    public void updateBrightness(View view){
+        final AlertDialog.Builder popDialog = new AlertDialog.Builder(this);
+        final SeekBar seek = new SeekBar(this);
+        seek.setMax(255);
+        seek.setKeyProgressIncrement(1);
+
+        //popDialog.setIcon(android.R.drawable.btn_star_big_on);
+        popDialog.setTitle("Please select your desired brightness: ");
+        popDialog.setView(seek);
+
+        seek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+
+
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                changeBrightness(progress);
+                Log.d(TAG, "Value of : " + progress);
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+
+            }
+
+        });
+        popDialog.show();
+    }
+
+    public void erodeImage (View view) {
+        mErodeOn = !mErodeOn;
+        if (mErodeOn) {
+            //use a cross shaped image with a 5x5 matrix
+            Mat element = Imgproc.getStructuringElement(Imgproc.CV_SHAPE_CROSS, new Size(2*5+1, 2*5+1), new Point(5, 5));
+
+            Imgproc.erode(mImageMatUnFiltered, mImageMatFiltered, element);
+
+            // uncheck other filter buttons
+            mBlurModeOn = false;
+            mGrayScaleModeOn = false;
+            mSepiaModeOn = false;
+            mCannyOn = false;
+            mRemoveBackgroundOn = false;
+            mSobelOn = false;
+            mScalingOn = false;
+            mDilateOn = false;
+            mDilateToggleButton.setChecked(false);
+            mScaleImageToggleButton.setChecked(false);
+            mGrayScaleToggleButton.setChecked(false);
+            mBlurToggleButton.setChecked(false);
+            mCannyToggleButton.setChecked(false);
+            mSepiaModeToggleButton.setChecked(false);
+            mRemoveBackgroundToggleButton.setChecked(false);
+            mSobelToggleButton.setChecked(false);
+            updateImageView(mImageMatFiltered);
+        } else {
+            mImageMatUnFiltered.copyTo(mImageMatFiltered);
+            updateImageView(mImageMatUnFiltered);
+        }
+
+    }
+
+    public void dilateImage (View view) {
+        mDilateOn = !mDilateOn;
+        if (mDilateOn) {
+            //use a cross shaped image with a 5x5 matrix
+            Mat element = Imgproc.getStructuringElement(Imgproc.CV_SHAPE_ELLIPSE, new Size(2*5+1, 2*5+1), new Point(5, 5));
+
+            Imgproc.dilate(mImageMatUnFiltered, mImageMatFiltered, element);
+
+            // uncheck other filter buttons
+            mBlurModeOn = false;
+            mGrayScaleModeOn = false;
+            mSepiaModeOn = false;
+            mCannyOn = false;
+            mRemoveBackgroundOn = false;
+            mSobelOn = false;
+            mScalingOn = false;
+            mErodeOn = false;
+            mScaleImageToggleButton.setChecked(false);
+            mErodeToggleButton.setChecked(false);
+            mGrayScaleToggleButton.setChecked(false);
+            mBlurToggleButton.setChecked(false);
+            mCannyToggleButton.setChecked(false);
+            mSepiaModeToggleButton.setChecked(false);
+            mRemoveBackgroundToggleButton.setChecked(false);
+            mSobelToggleButton.setChecked(false);
+            updateImageView(mImageMatFiltered);
+        } else {
+            mImageMatUnFiltered.copyTo(mImageMatFiltered);
+            updateImageView(mImageMatUnFiltered);
+        }
+
     }
 
     public void sobel (View view) {
@@ -286,8 +439,6 @@ public class ImageManipulationActivity extends AppCompatActivity {
             // init
             Mat grayImage = new Mat();
             Mat detectedEdges = new Mat();
-            int scale = 1;
-            int delta = 0;
             int ddepth = CvType.CV_16S;
             Mat grad_x = new Mat();
             Mat grad_y = new Mat();
@@ -301,20 +452,31 @@ public class ImageManipulationActivity extends AppCompatActivity {
             Imgproc.cvtColor(mImageMatFiltered, grayImage, Imgproc.COLOR_BGR2GRAY);
 
             // Gradient X
-            // Imgproc.Sobel(grayImage, grad_x, ddepth, 1, 0, 3, scale,
-            // this.threshold.getValue(), Core.BORDER_DEFAULT );
             Imgproc.Sobel(grayImage, grad_x, ddepth, 1, 0);
             Core.convertScaleAbs(grad_x, abs_grad_x);
 
             // Gradient Y
-            // Imgproc.Sobel(grayImage, grad_y, ddepth, 0, 1, 3, scale,
-            // this.threshold.getValue(), Core.BORDER_DEFAULT );
             Imgproc.Sobel(grayImage, grad_y, ddepth, 0, 1);
             Core.convertScaleAbs(grad_y, abs_grad_y);
 
             // Total Gradient (approximate)
             Core.addWeighted(abs_grad_x, 0.5, abs_grad_y, 0.5, 0, detectedEdges);
-            // Core.addWeighted(grad_x, 0.5, grad_y, 0.5, 0, detectedEdges);
+
+            // uncheck other filter buttons
+            mBlurModeOn = false;
+            mGrayScaleModeOn = false;
+            mSepiaModeOn = false;
+            mCannyOn = false;
+            mRemoveBackgroundOn = false;
+            mErodeOn = false;
+            mScalingOn = false;
+            mScaleImageToggleButton.setChecked(false);
+            mGrayScaleToggleButton.setChecked(false);
+            mBlurToggleButton.setChecked(false);
+            mCannyToggleButton.setChecked(false);
+            mSepiaModeToggleButton.setChecked(false);
+            mRemoveBackgroundToggleButton.setChecked(false);
+            mErodeToggleButton.setChecked(false);
 
             detectedEdges.copyTo(mImageMatFiltered);
             updateImageView(mImageMatFiltered);
@@ -336,20 +498,60 @@ public class ImageManipulationActivity extends AppCompatActivity {
             // canny detector, upper threshold of 80 and a lower one of 90
             Imgproc.Canny(mImageMatFiltered, mImageMatFiltered, 80, 90);
             updateImageView(mImageMatFiltered);
+            // uncheck other filter buttons
+            mBlurModeOn = false;
+            mGrayScaleModeOn = false;
+            mSobelOn = false;
+            mSepiaModeOn = false;
+            mRemoveBackgroundOn = false;
+            mErodeOn = false;
+            mScalingOn = false;
+            mScaleImageToggleButton.setChecked(false);
+            mGrayScaleToggleButton.setChecked(false);
+            mBlurToggleButton.setChecked(false);
+            mSobelToggleButton.setChecked(false);
+            mSepiaModeToggleButton.setChecked(false);
+            mRemoveBackgroundToggleButton.setChecked(false);
+            mErodeToggleButton.setChecked(false);
+        } else {
+            mImageMatUnFiltered.copyTo(mImageMatFiltered);
+            updateImageView(mImageMatUnFiltered);
         }
     }
 
-    private void scaleImage (double zoomfactor) {
-        Size sizeRgba = mImageMatFiltered.size();
-        int rows = (int) sizeRgba.height;
-        int cols = (int) sizeRgba.width;
+    public void scaleImage (View view) {
+        mScalingOn = !mScalingOn;
+        if (mScalingOn) {
+            Size matSize = mImageMatFiltered.size();
+            int rows = (int) matSize.height;
+            int cols = (int) matSize.width;
 
-        Mat zoomCorner = mImageMatFiltered.submat(rows / 4, (rows *3) / 4 , cols/4, (cols * 3) / 4);
-        Imgproc.resize(zoomCorner, mImageMatFiltered, zoomCorner.size());
-        //Imgproc.rectangle(mZoomWindow, new Point(1, 1), new Point(wsize.width - 2, wsize.height - 2), new Scalar(255, 0, 0, 255), 2);
-        zoomCorner.release();
-        mImageMatFiltered.copyTo(mImageMatUnFiltered);
-        updateImageView(mImageMatFiltered);
+            Mat zoomCorner =  mImageMatFiltered.submat(rows / 2 - 40 * rows / 100, rows / 2 + 40 * rows / 100, cols / 2 - 40 * cols / 100, cols / 2 + 40 * cols / 100);
+            Imgproc.resize(zoomCorner, mImageMatFiltered, zoomCorner.size());
+
+            zoomCorner.release();
+
+            // uncheck other filter buttons
+            mBlurModeOn = false;
+            mGrayScaleModeOn = false;
+            mSobelOn = false;
+            mSepiaModeOn = false;
+            mRemoveBackgroundOn = false;
+            mErodeOn = false;
+            mCannyOn = false;
+            mCannyToggleButton.setChecked(false);
+            mGrayScaleToggleButton.setChecked(false);
+            mBlurToggleButton.setChecked(false);
+            mSobelToggleButton.setChecked(false);
+            mSepiaModeToggleButton.setChecked(false);
+            mRemoveBackgroundToggleButton.setChecked(false);
+            mErodeToggleButton.setChecked(false);
+
+            updateImageView(mImageMatFiltered);
+        } else {
+            mImageMatUnFiltered.copyTo(mImageMatFiltered);
+            updateImageView(mImageMatUnFiltered);
+        }
     }
 
     private void changeResolution () {
@@ -429,10 +631,25 @@ public class ImageManipulationActivity extends AppCompatActivity {
     }
 
     public void removeBackground (View view) {
-        mRemoveBackground = !mRemoveBackground;
-        if (mRemoveBackground) {
+        mRemoveBackgroundOn = !mRemoveBackgroundOn;
+        if (mRemoveBackgroundOn) {
             mImageMatFiltered = doBackgroundRemoval(mImageMatUnFiltered);
             updateImageView(mImageMatFiltered);
+            // uncheck other filter buttons
+            mBlurModeOn = false;
+            mGrayScaleModeOn = false;
+            mSobelOn = false;
+            mSepiaModeOn = false;
+            mCannyOn = false;
+            mErodeOn = false;
+            mScalingOn = false;
+            mScaleImageToggleButton.setChecked(false);
+            mGrayScaleToggleButton.setChecked(false);
+            mBlurToggleButton.setChecked(false);
+            mCannyToggleButton.setChecked(false);
+            mSobelToggleButton.setChecked(false);
+            mSepiaModeToggleButton.setChecked(false);
+            mErodeToggleButton.setChecked(false);
         } else {
             mImageMatUnFiltered.copyTo(mImageMatFiltered);
             updateImageView(mImageMatUnFiltered);

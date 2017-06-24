@@ -57,7 +57,7 @@
                 android:textOn="Blur on" />
 
             <Button
-                android:id="@+id/button6"
+                android:id="@+id/rotateButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginRight="8dp"
@@ -83,6 +83,15 @@
                 android:onClick="skewImage"
                 android:text="skew 45°" />
 
+            <Button
+                android:id="@+id/changeBrightness"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="8dp"
+                android:layout_marginTop="0dp"
+                android:onClick="updateBrightness"
+                android:text="change brightness" />
+
             <ToggleButton
                 android:id="@+id/sobel"
                 android:layout_width="wrap_content"
@@ -92,6 +101,36 @@
                 android:onClick="sobel"
                 android:textOff="Sobel off"
                 android:textOn="Sobel on" />
+
+            <ToggleButton
+                android:id="@+id/erode"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="0dp"
+                android:layout_marginRight="8dp"
+                android:onClick="erodeImage"
+                android:textOff="Erode"
+                android:textOn="Erode" />
+
+            <ToggleButton
+                android:id="@+id/dilate"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="0dp"
+                android:layout_marginRight="8dp"
+                android:onClick="dilateImage"
+                android:textOff="Dilate"
+                android:textOn="Dilate" />
+
+            <ToggleButton
+                android:id="@+id/scaleImage"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="0dp"
+                android:layout_marginRight="8dp"
+                android:onClick="scaleImage"
+                android:textOff="Zoom off"
+                android:textOn="Zoom on" />
 
             <ToggleButton
                 android:id="@+id/cannyEdgeDetection"
@@ -118,10 +157,10 @@
 
     <android.support.design.widget.FloatingActionButton
         android:id="@+id/cameraButton"
-        android:layout_width="50dp"
-        android:layout_height="50dp"
+        android:layout_width="51dp"
+        android:layout_height="53dp"
         android:layout_marginRight="16dp"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="2dp"
         android:clickable="true"
         android:onClick="takeImageFromCamera"
         app:fabSize="mini"
