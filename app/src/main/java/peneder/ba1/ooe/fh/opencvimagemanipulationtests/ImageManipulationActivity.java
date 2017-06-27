@@ -72,6 +72,7 @@ public class ImageManipulationActivity extends AppCompatActivity {
     private boolean mErodeOn = false;
     private boolean mScalingOn = false;
     private boolean mDilateOn = false;
+    private boolean mPictureScewed = false;
 
     private FloatingActionButton takePictureButton;
 
@@ -216,6 +217,7 @@ public class ImageManipulationActivity extends AppCompatActivity {
             mRemoveBackgroundOn = false;
             mErodeOn = false;
             mScalingOn = false;
+            mPictureScewed = false;
             mScaleImageToggleButton.setChecked(false);
             mGrayScaleToggleButton.setChecked(false);
             mBlurToggleButton.setChecked(false);
@@ -253,6 +255,7 @@ public class ImageManipulationActivity extends AppCompatActivity {
 
     public void skewImage (View view) {
         deskew(45);
+        mPictureScewed = true;
     }
 
 
@@ -263,7 +266,7 @@ public class ImageManipulationActivity extends AppCompatActivity {
 
     private void setBlurMode() {
         if (mBlurModeOn) {
-            //Imgproc.GaussianBlur(mImageMatUnFiltered, mImageMatFiltered, new Size(37, 37), 0);
+            //Imgproc.GaussianBlur(mImageMatUnFiltered, mImageMatFiltered, new Size(31, 31), 0);
             Imgproc.blur(mImageMatUnFiltered, mImageMatFiltered, new Size(31.0,31.0));
             updateImageView(mImageMatFiltered);
             // uncheck other filter buttons
@@ -274,6 +277,7 @@ public class ImageManipulationActivity extends AppCompatActivity {
             mRemoveBackgroundOn = false;
             mErodeOn = false;
             mScalingOn = false;
+            mPictureScewed = false;
             mScaleImageToggleButton.setChecked(false);
             mGrayScaleToggleButton.setChecked(false);
             mCannyToggleButton.setChecked(false);
@@ -300,6 +304,7 @@ public class ImageManipulationActivity extends AppCompatActivity {
             mRemoveBackgroundOn = false;
             mErodeOn = false;
             mScalingOn = false;
+            mPictureScewed = false;
             mScaleImageToggleButton.setChecked(false);
             mBlurToggleButton.setChecked(false);
             mCannyToggleButton.setChecked(false);
@@ -384,6 +389,7 @@ public class ImageManipulationActivity extends AppCompatActivity {
             mSobelOn = false;
             mScalingOn = false;
             mDilateOn = false;
+            mPictureScewed = false;
             mDilateToggleButton.setChecked(false);
             mScaleImageToggleButton.setChecked(false);
             mGrayScaleToggleButton.setChecked(false);
@@ -417,6 +423,7 @@ public class ImageManipulationActivity extends AppCompatActivity {
             mSobelOn = false;
             mScalingOn = false;
             mErodeOn = false;
+            mPictureScewed = false;
             mScaleImageToggleButton.setChecked(false);
             mErodeToggleButton.setChecked(false);
             mGrayScaleToggleButton.setChecked(false);
@@ -470,6 +477,7 @@ public class ImageManipulationActivity extends AppCompatActivity {
             mRemoveBackgroundOn = false;
             mErodeOn = false;
             mScalingOn = false;
+            mPictureScewed = false;
             mScaleImageToggleButton.setChecked(false);
             mGrayScaleToggleButton.setChecked(false);
             mBlurToggleButton.setChecked(false);
@@ -506,6 +514,7 @@ public class ImageManipulationActivity extends AppCompatActivity {
             mRemoveBackgroundOn = false;
             mErodeOn = false;
             mScalingOn = false;
+            mPictureScewed = false;
             mScaleImageToggleButton.setChecked(false);
             mGrayScaleToggleButton.setChecked(false);
             mBlurToggleButton.setChecked(false);
@@ -532,6 +541,7 @@ public class ImageManipulationActivity extends AppCompatActivity {
             zoomCorner.release();
 
             // uncheck other filter buttons
+            mPictureScewed = false;
             mBlurModeOn = false;
             mGrayScaleModeOn = false;
             mSobelOn = false;
@@ -576,7 +586,12 @@ public class ImageManipulationActivity extends AppCompatActivity {
      */
     private void deskew(double angle) {
         Point center = new Point(mImageMatFiltered.width() / 2, mImageMatFiltered.height() / 2);
-        Mat rotImage = Imgproc.getRotationMatrix2D(center, angle, 1.0);
+        Mat rotImage;
+        if (!mPictureScewed) {
+            rotImage = Imgproc.getRotationMatrix2D(center, angle, 0.6);
+        } else {
+            rotImage = Imgproc.getRotationMatrix2D(center, angle, 1);
+        }
         Size size = new Size(mImageMatFiltered.width(), mImageMatFiltered.height());
 
         Imgproc.warpAffine(mImageMatFiltered, mImageMatFiltered, rotImage, size, Imgproc.INTER_LINEAR
@@ -636,6 +651,7 @@ public class ImageManipulationActivity extends AppCompatActivity {
             mImageMatFiltered = doBackgroundRemoval(mImageMatUnFiltered);
             updateImageView(mImageMatFiltered);
             // uncheck other filter buttons
+            mPictureScewed = false;
             mBlurModeOn = false;
             mGrayScaleModeOn = false;
             mSobelOn = false;
